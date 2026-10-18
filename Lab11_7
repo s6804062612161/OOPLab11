@@ -1,0 +1,113 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+
+public class BalloonShooterThread extends JFrame {
+    public BalloonShooterThread() {
+        add(new GamePanelThread());
+    }
+
+    public static void main(String[] args) {
+        BalloonShooterThread frame = new BalloonShooterThread();
+        frame.setTitle("Balloon Shooter with Thread");
+        frame.setSize(400, 350);
+        frame.setLocationRelativeTo(null);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setVisible(true);
+    }
+}
+
+class GamePanelThread extends JPanel {
+    private int balloonX;
+    private int balloonY = 30;
+    private int balloonRadius = 15;
+
+    private int gunX = 200;
+    private int gunAngle = 0;
+
+    private int bulletX = -1;
+    private int bulletY = -1;
+    private boolean isShooting = false;
+
+    public GamePanelThread() {
+        setFocusable(true);
+        resetBalloon();
+
+        addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_LEFT) {
+                    if (gunAngle > -60) gunAngle -= 5;
+                    repaint();
+                } else if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
+                    if (gunAngle < 60) gunAngle += 5;
+                    repaint();
+                } else if (e.getKeyCode() == KeyEvent.VK_UP) {
+                    if (!isShooting) {
+                        isShooting = true;
+                        bulletX = gunX;
+                        bulletY = getHeight() - 30;
+
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                while (isShooting) {
+                                    bulletY -= 5;
+                                    bulletX += (int)(5 * Math.sin(Math.toRadians(gunAngle)));
+
+                                    if (bulletY <= 0 || bulletX <= 0 || bulletX >= getWidth()) {
+                                        isShooting = false;
+                                    }
+
+                                    double dist = Math.sqrt(Math.pow(bulletX - balloonX, 2) + Math.pow(bulletY - balloonY, 2));
+                                    if (dist <= balloonRadius + 3) {
+                                        isShooting = false;
+                                        resetBalloon();
+                                    }
+
+                                    repaint();
+
+                                    try {
+                                        Thread.sleep(10);
+                                    } catch (InterruptedException ex) {
+                                        break;
+                                    }
+                                }
+                            }
+                        }).start();
+                    }
+                }
+            }
+        });
+    }
+
+    private void resetBalloon() {
+        balloonX = 50 + (int)(Math.random() * 300);
+        balloonY = 30;
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+
+        g.setColor(Color.BLACK);
+        g.drawOval(balloonX - balloonRadius, balloonY - balloonRadius, 2 * balloonRadius, 2 * balloonRadius);
+
+        int gunBaseX = getWidth() / 2;
+        int gunBaseY = getHeight() - 10;
+        this.gunX = gunBaseX;
+
+        int gunLength = 25;
+        int gunEndX = gunBaseX + (int)(gunLength * Math.sin(Math.toRadians(gunAngle)));
+        int gunEndY = gunBaseY - (int)(gunLength * Math.cos(Math.toRadians(gunAngle)));
+
+        Graphics2D g2 = (Graphics2D) g;
+        g2.setStroke(new BasicStroke(3));
+        g2.drawLine(gunBaseX, gunBaseY, gunEndX, gunEndY);
+
+        if (isShooting) {
+            g.setColor(Color.BLACK);
+            g.fillOval(bulletX - 3, bulletY - 3, 6, 6);
+        }
+    }
+}
