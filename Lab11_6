@@ -1,0 +1,107 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+
+public class CarRaceTrackThread extends JFrame {
+    private JTextField[] jtfSpeeds = new JTextField[1];
+    private CarPanelThread[] carPanels = new CarPanelThread[1];
+
+    public CarRaceTrackThread() {
+        JPanel pTop = new JPanel(new FlowLayout());
+        for (int i = 0; i < 4; i++) {
+            pTop.add(new JLabel("Car " + (i + 1) + ":"));
+            jtfSpeeds[i] = new JTextField(String.valueOf((i + 1) * 10), 4);
+            pTop.add(jtfSpeeds[i]);
+        }
+
+        JPanel pCenter = new JPanel(new GridLayout(4, 1, 2, 2));
+        for (int i = 0; i < 4; i++) {
+            carPanels[i] = new CarPanelThread((i + 1) * 10);
+            pCenter.add(carPanels[i]);
+        }
+
+        add(pTop, BorderLayout.NORTH);
+        add(pCenter, BorderLayout.CENTER);
+
+        for (int i = 0; i < 4; i++) {
+            final int index = i;
+            jtfSpeeds[i].addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    try {
+                        int speed = Integer.parseInt(jtfSpeeds[index].getText());
+                        carPanels[index].setSpeed(speed);
+                    } catch (Exception ex) {}
+                }
+            });
+        }
+    }
+
+    public static void main(String[] args) {
+        CarRaceTrackThread frame = new CarRaceTrackThread();
+        frame.setTitle("Car Race Track with Thread");
+        frame.setSize(500, 300);
+        frame.setLocationRelativeTo(null);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setVisible(true);
+    }
+}
+
+class CarPanelThread extends JPanel implements Runnable {
+    private int xBase = 0;
+    private int speed;
+    private int delay;
+    private Thread thread;
+
+    public CarPanelThread(int speed) {
+        setSpeed(speed);
+        thread = new Thread(this);
+        thread.start();
+    }
+
+    public void setSpeed(int speed) {
+        this.speed = speed;
+        this.delay = Math.max(1, 100 - speed);
+    }
+
+    @Override
+    public void run() {
+        while (true) {
+            repaint();
+            try {
+                Thread.sleep(delay);
+            } catch (InterruptedException e) {
+                break;
+            }
+        }
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        int yBase = getHeight();
+
+        if (xBase > getWidth()) {
+            xBase = -50;
+        } else {
+            xBase += 2;
+        }
+
+        g.setColor(Color.BLACK);
+        g.drawLine(0, yBase - 1, getWidth(), yBase - 1);
+
+        g.fillOval(xBase + 10, yBase - 10, 10, 10);
+        g.fillOval(xBase + 30, yBase - 10, 10, 10);
+
+        g.setColor(Color.GREEN);
+        g.fillRect(xBase, yBase - 20, 50, 10);
+
+        g.setColor(Color.RED);
+        Polygon polygon = new Polygon();
+        polygon.addPoint(xBase + 10, yBase - 20);
+        polygon.addPoint(xBase + 20, yBase - 30);
+        polygon.addPoint(xBase + 30, yBase - 30);
+        polygon.addPoint(xBase + 40, yBase - 20);
+        g.fillPolygon(polygon);
+    }
+}
